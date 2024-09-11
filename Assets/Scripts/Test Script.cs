@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -11,15 +12,30 @@ public class TestScript : MonoBehaviour
     public bool Turn = true;
     public Grid grid;
     public int bounds = 5;
+    public bool canPlace = true;
 
     public GameObject Circle;
     public GameObject Cross;
 
+    public Transform SideDown;
+    public Transform SideLeft;
+    public Transform SideRight;
+    public Transform SideUp;
+    public Camera cam;
+
     private Agent Agent;
+    
+    private SpriteRenderer circlePrew;
 
     private void Start()
     {
+        circlePrew = GetComponent<SpriteRenderer>();
         Agent = GetComponent<Agent>();
+        SideDown.position = new Vector3(bounds / 2, -0.3f, 0);
+        SideUp.position = new Vector3(bounds / 2, bounds + 0.3f, 0);
+        SideLeft.position = new Vector3(-0.3f, bounds/2, 0);
+        SideRight.position = new Vector3(bounds + 0.3f, bounds/2, 0);
+        cam.transform.position = new Vector3(bounds / 2, bounds / 2, -10);
     }
     //false = cross true = circle
     public Dictionary<Vector3, bool> SymbolsDict = new Dictionary<Vector3, bool>();
@@ -29,23 +45,33 @@ public class TestScript : MonoBehaviour
         {
             Vector2 mouseToWorldPoint = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
-            //mouseToWorldPoint.z = 0
             Vector3Int StorageValue = grid.WorldToCell(mouseToWorldPoint);
-            Debug.Log(StorageValue);
             StorageValue.z = 0;
             Vector3 mouseCell = GetGridCoords(StorageValue);
+            mouseCell.z = -0.9f;
             this.transform.position = mouseCell;
+            if (SymbolsDict.ContainsKey(StorageValue) || StorageValue.x < 0 || StorageValue.y < 0 || StorageValue.x >= bounds || StorageValue.y >= bounds){
+                Color col = Color.red;
+                col.a = 0.7f;
+                circlePrew.color = col;
+                canPlace = false;
+            }
+            else {
+                Color col = Color.white;
+                col.a = 0.31f;
+                circlePrew.color = col;
+                canPlace = true;
+            }
 
-            if (Input.GetMouseButtonDown(0))
+            if (Input.GetMouseButtonDown(0) && canPlace)
             {
-                Debug.Log(SymbolsDict);
                 if (!SymbolsDict.ContainsKey(StorageValue))
                 {
-                    Debug.Log(StorageValue);
                     //placed = true;
                     Turn = false;
                     Instantiate(Circle).transform.position = mouseCell;
                     SymbolsDict.Add(StorageValue, true);
+                    checkWin(SymbolsDict);
 
                 }
 
@@ -68,10 +94,10 @@ public class TestScript : MonoBehaviour
                     Vector3Int pos = new Vector3Int(i, j, 0);
                     Vector3 gridCoords = pos;
                     gridCoords = GetGridCoords(gridCoords);
-                    Debug.Log(pos);
                     Instantiate(Cross).transform.position = gridCoords;
                     SymbolsDict.Add(pos, false);
                     Turn = true;
+                    checkWin(SymbolsDict);
                     return;
 
                 }
@@ -94,5 +120,82 @@ public class TestScript : MonoBehaviour
         return temp;
     }
 
+    void checkWin(Dictionary<Vector3, bool> list)
+    {
+        int counter = 0;
+        List<KeyValuePair<Vector3, bool>> tempL = new List<KeyValuePair<Vector3, bool>>();
+        foreach (var pair in list)
+        {
+            //Right/Left
+
+            try
+            {
+                if (!(pair.Key.x + 4 >= bounds))
+                {
+                    if ((list[new Vector3(pair.Key.x + 1, pair.Key.y, 0)] == pair.Value) &&
+                        (list[new Vector3(pair.Key.x + 2, pair.Key.y, 0)] == pair.Value) &&
+                        (list[new Vector3(pair.Key.x + 3, pair.Key.y, 0)] == pair.Value) &&
+                        (list[new Vector3(pair.Key.x + 4, pair.Key.y, 0)] == pair.Value))
+                    {
+                        Debug.Log("Horizontal Win");
+                        return;
+                    }
+                }
+            }
+            catch (KeyNotFoundException)
+            {
+            }
+            try 
+            {
+                if (!(pair.Key.y + 4 >= bounds))
+                {
+                    if ((list[new Vector3(pair.Key.x, pair.Key.y + 1, 0)] == pair.Value) &&
+                        (list[new Vector3(pair.Key.x, pair.Key.y + 2, 0)] == pair.Value) &&
+                        (list[new Vector3(pair.Key.x, pair.Key.y + 3, 0)] == pair.Value) &&
+                        (list[new Vector3(pair.Key.x, pair.Key.y + 4, 0)] == pair.Value))
+                    {
+                        Debug.Log("Vertical Win");
+                        return;
+                    }
+                }
+                    
+            }
+            catch (KeyNotFoundException)
+            {
+            }
+            try
+            {
+                if (!(pair.Key.x + 4 >= bounds || pair.Key.y + 4 >= bounds))
+                {
+                    if ((list[new Vector3(pair.Key.x+1, pair.Key.y + 1, 0)] == pair.Value) &&
+                        (list[new Vector3(pair.Key.x + 2, pair.Key.y + 2, 0)] == pair.Value) &&
+                        (list[new Vector3(pair.Key.x + 3, pair.Key.y + 3, 0)] == pair.Value) &&
+                        (list[new Vector3(pair.Key.x + 4, pair.Key.y + 4, 0)] == pair.Value))
+                    {
+                        Debug.Log("Diagonal Win (right leaning)");
+                        return;
+                    }
+                }
+            }
+            catch (KeyNotFoundException) { }
+            try
+            {
+                if (!(pair.Key.x - 4 >= bounds || pair.Key.y + 4 >= bounds))
+                {
+                    if ((list[new Vector3(pair.Key.x - 1, pair.Key.y + 1, 0)] == pair.Value) &&
+                        (list[new Vector3(pair.Key.x - 2, pair.Key.y + 2, 0)] == pair.Value) &&
+                        (list[new Vector3(pair.Key.x - 3, pair.Key.y + 3, 0)] == pair.Value) &&
+                        (list[new Vector3(pair.Key.x - 4, pair.Key.y + 4, 0)] == pair.Value))
+                    {
+                        Debug.Log("Diagonal Win (left leaning)");
+                        return;
+                    }
+                }
+            }
+            catch (KeyNotFoundException) { }
+            
+            
+        }
+    }
 }
 
