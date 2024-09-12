@@ -16,11 +16,12 @@ public class CharacterInteraction : MonoBehaviour
     public string[] currentLines;
 
     [SerializeField] private int index;
+    bool inDialogue= false;
 
     // Update is called once per frame
     void Update()
     {
-        if ((Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Space) || Input.GetMouseButtonDown(0)) && player.lockMovement)
+        if ((Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Space) || Input.GetMouseButtonDown(0)) && inDialogue)
         {
             if (textComponent.text == currentLines[index])
             {
@@ -51,6 +52,7 @@ public class CharacterInteraction : MonoBehaviour
         }
         textComponent.text = string.Empty;
         index = 0;
+        inDialogue = true;
         StartCoroutine(TypeLine());
     }
 
@@ -78,9 +80,11 @@ public class CharacterInteraction : MonoBehaviour
         }
         else
         {
+            index = 0;
             player.lockMovement = false;
             Cursor.lockState = CursorLockMode.Locked;
             textBox.SetActive(false);
+            inDialogue = false;
         }
     }
 }
