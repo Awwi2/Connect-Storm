@@ -26,9 +26,11 @@ public class TestScript : MonoBehaviour
     private Agent Agent;
     
     private SpriteRenderer circlePrew;
+    static System.Random rnd;
 
     private void Start()
     {
+        rnd = new System.Random();
         circlePrew = GetComponent<SpriteRenderer>();
         Agent = GetComponent<Agent>();
         SideDown.position = new Vector3(bounds / 2, -0.3f, 0);
@@ -38,7 +40,7 @@ public class TestScript : MonoBehaviour
         cam.transform.position = new Vector3(bounds / 2, bounds / 2, -10);
     }
     //false = cross true = circle
-    public Dictionary<Vector3, bool> SymbolsDict = new Dictionary<Vector3, bool>();
+    public Dictionary<Vector3Int, bool> SymbolsDict = new Dictionary<Vector3Int, bool>();
     void Update()
     {
         if (Turn)
@@ -72,24 +74,44 @@ public class TestScript : MonoBehaviour
                     Instantiate(Circle).transform.position = mouseCell;
                     SymbolsDict.Add(StorageValue, true);
                     checkWin(SymbolsDict);
-
                 }
 
             }
         }
         else //Agents Turn
         {
-            MakeMove();
+            MakeIntelligentMove();
+            
         }
     }
 
-    void MakeMove()
+    void MakeIntelligentMove()
+    {
+        Agent.Move(SymbolsDict);
+        Turn = true;
+    }
+    void MakeRandomMove()
+    {
+        List<Vector3Int> moves = GetFreeTiles(SymbolsDict);
+        int r = rnd.Next(moves.Count);
+
+        Vector3Int move = moves[r];
+        SymbolsDict.Add(move, false);
+
+        Vector3 gridCoords = GetGridCoords(move);
+        Instantiate(Cross).transform.position = gridCoords;
+
+        Turn = true;
+        checkWin(SymbolsDict);
+    }
+
+    void MakeMoveWList()
     {
         for (int i = 0; i < bounds; i++)
         {
             for (int j = 0; j < bounds; j++)
             {
-                if (!SymbolsDict.ContainsKey(new Vector3(i, j, 0)))
+                if (!SymbolsDict.ContainsKey(new Vector3Int(i, j, 0)))
                 {
                     Vector3Int pos = new Vector3Int(i, j, 0);
                     Vector3 gridCoords = pos;
@@ -103,6 +125,21 @@ public class TestScript : MonoBehaviour
                 }
             }
         }
+    }
+    List<Vector3Int> GetFreeTiles(Dictionary<Vector3Int, bool> list)
+    {
+        Vector3Int temp = new Vector3Int();
+        List<Vector3Int> output = new List<Vector3Int>();
+        for (int i = 0; i < bounds; i++)
+        {
+            for (int j = 0; j < bounds; j++)
+            {
+                if (!list.ContainsKey(new Vector3Int(i, j, 0))) { 
+                    output.Add(new Vector3Int(i,j,0));
+                }
+            }
+        }
+        return output;
     }
     Vector3 GetGridCoords(Vector3Int pos)
     {
@@ -120,9 +157,8 @@ public class TestScript : MonoBehaviour
         return temp;
     }
 
-    void checkWin(Dictionary<Vector3, bool> list)
+    void checkWin(Dictionary<Vector3Int, bool> list)
     {
-        int counter = 0;
         List<KeyValuePair<Vector3, bool>> tempL = new List<KeyValuePair<Vector3, bool>>();
         foreach (var pair in list)
         {
@@ -132,10 +168,10 @@ public class TestScript : MonoBehaviour
             {
                 if (!(pair.Key.x + 4 >= bounds))
                 {
-                    if ((list[new Vector3(pair.Key.x + 1, pair.Key.y, 0)] == pair.Value) &&
-                        (list[new Vector3(pair.Key.x + 2, pair.Key.y, 0)] == pair.Value) &&
-                        (list[new Vector3(pair.Key.x + 3, pair.Key.y, 0)] == pair.Value) &&
-                        (list[new Vector3(pair.Key.x + 4, pair.Key.y, 0)] == pair.Value))
+                    if ((list[new Vector3Int(pair.Key.x + 1, pair.Key.y, 0)] == pair.Value) &&
+                        (list[new Vector3Int(pair.Key.x + 2, pair.Key.y, 0)] == pair.Value) &&
+                        (list[new Vector3Int(pair.Key.x + 3, pair.Key.y, 0)] == pair.Value) &&
+                        (list[new Vector3Int(pair.Key.x + 4, pair.Key.y, 0)] == pair.Value))
                     {
                         Debug.Log("Horizontal Win");
                         return;
@@ -149,10 +185,10 @@ public class TestScript : MonoBehaviour
             {
                 if (!(pair.Key.y + 4 >= bounds))
                 {
-                    if ((list[new Vector3(pair.Key.x, pair.Key.y + 1, 0)] == pair.Value) &&
-                        (list[new Vector3(pair.Key.x, pair.Key.y + 2, 0)] == pair.Value) &&
-                        (list[new Vector3(pair.Key.x, pair.Key.y + 3, 0)] == pair.Value) &&
-                        (list[new Vector3(pair.Key.x, pair.Key.y + 4, 0)] == pair.Value))
+                    if ((list[new Vector3Int(pair.Key.x, pair.Key.y + 1, 0)] == pair.Value) &&
+                        (list[new Vector3Int(pair.Key.x, pair.Key.y + 2, 0)] == pair.Value) &&
+                        (list[new Vector3Int(pair.Key.x, pair.Key.y + 3, 0)] == pair.Value) &&
+                        (list[new Vector3Int(pair.Key.x, pair.Key.y + 4, 0)] == pair.Value))
                     {
                         Debug.Log("Vertical Win");
                         return;
@@ -167,10 +203,10 @@ public class TestScript : MonoBehaviour
             {
                 if (!(pair.Key.x + 4 >= bounds || pair.Key.y + 4 >= bounds))
                 {
-                    if ((list[new Vector3(pair.Key.x+1, pair.Key.y + 1, 0)] == pair.Value) &&
-                        (list[new Vector3(pair.Key.x + 2, pair.Key.y + 2, 0)] == pair.Value) &&
-                        (list[new Vector3(pair.Key.x + 3, pair.Key.y + 3, 0)] == pair.Value) &&
-                        (list[new Vector3(pair.Key.x + 4, pair.Key.y + 4, 0)] == pair.Value))
+                    if ((list[new Vector3Int(pair.Key.x+1, pair.Key.y + 1, 0)] == pair.Value) &&
+                        (list[new Vector3Int(pair.Key.x + 2, pair.Key.y + 2, 0)] == pair.Value) &&
+                        (list[new Vector3Int(pair.Key.x + 3, pair.Key.y + 3, 0)] == pair.Value) &&
+                        (list[new Vector3Int(pair.Key.x + 4, pair.Key.y + 4, 0)] == pair.Value))
                     {
                         Debug.Log("Diagonal Win (right leaning)");
                         return;
@@ -182,10 +218,10 @@ public class TestScript : MonoBehaviour
             {
                 if (!(pair.Key.x - 4 >= bounds || pair.Key.y + 4 >= bounds))
                 {
-                    if ((list[new Vector3(pair.Key.x - 1, pair.Key.y + 1, 0)] == pair.Value) &&
-                        (list[new Vector3(pair.Key.x - 2, pair.Key.y + 2, 0)] == pair.Value) &&
-                        (list[new Vector3(pair.Key.x - 3, pair.Key.y + 3, 0)] == pair.Value) &&
-                        (list[new Vector3(pair.Key.x - 4, pair.Key.y + 4, 0)] == pair.Value))
+                    if ((list[new Vector3Int(pair.Key.x - 1, pair.Key.y + 1, 0)] == pair.Value) &&
+                        (list[new Vector3Int(pair.Key.x - 2, pair.Key.y + 2, 0)] == pair.Value) &&
+                        (list[new Vector3Int(pair.Key.x - 3, pair.Key.y + 3, 0)] == pair.Value) &&
+                        (list[new Vector3Int(pair.Key.x - 4, pair.Key.y + 4, 0)] == pair.Value))
                     {
                         Debug.Log("Diagonal Win (left leaning)");
                         return;
