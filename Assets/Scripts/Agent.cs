@@ -114,14 +114,17 @@ public class Agent : MonoBehaviour
             if (s.Contains("XXXXX")) { value += 50000000; }
             if (s.Contains("-XXXX-") && !turn) { value += 1000000; }
             if (s.Contains("0XXXX-") && !turn) { value += 1000000; }
+            if (s.Contains("-XXXX0") && !turn) { value += 1000000; }
             if (s.Contains("0XXXX-") && turn) { value += 1000; }
+            if (s.Contains("-XXXX0") && turn) { value += 1000; }
             if (s.Contains("-XXX-") && !turn) { value += 200; }
 
             if (s.Contains("00000")) { value += -50000000; }
             if (s.Contains("-0000-") && turn) { value += -1000000; }
             if (s.Contains("-0000-") && !turn) { value += -100000; }
             if (s.Contains("X0000-") && turn) { value += -1000000; }
-            if (s.Contains("X0000-") && !turn) { value += -1000; }
+            if (s.Contains("-0000X") && turn) { value += -1000000; }
+            if (s.Contains("-0000X") && !turn) { value += -1000; }
             if (s.Contains("-000-") && turn) { value += -200; }
         }
         return value;
@@ -129,12 +132,12 @@ public class Agent : MonoBehaviour
     List<String> GetLines(Dictionary<Vector3Int, bool> l)
     {
         List<String> lines = new ();
-        
+        //Horizontal or vertical idk
         for (int i = 0; i < bounds; i++) {
             String s = "";
             for (int j = 0; j < bounds; j++) {
                 if (l.ContainsKey(new Vector3Int(i, j, 0))) {
-                    if (l[new Vector3Int(i, j, 0)] == true)
+                    if (l[new Vector3Int(i, j, 0)])
                     {
                         s += "0";
                     }
@@ -146,6 +149,7 @@ public class Agent : MonoBehaviour
 
             lines.Add(s);
         }
+        //Vertical or Horizontal idk
         for (int i = 0; i < bounds; i++)
         {
             String s = "";
@@ -153,7 +157,7 @@ public class Agent : MonoBehaviour
             {
                 if (l.ContainsKey(new Vector3Int(j, i, 0)))
                 {
-                    if (l[new Vector3Int(j, i, 0)] == true)
+                    if (l[new Vector3Int(j, i, 0)])
                     {
                         s += "0";
                     }
@@ -163,6 +167,65 @@ public class Agent : MonoBehaviour
             }
             lines.Add(s);
         }
+        //Diagonal(right leaning) CREDIT TO nesto.prikladno on stackoverflow
+        for (int i = 0; i < bounds; i++)
+        {
+            String s = "";
+            String s2 = "";
+            for (int j = 0; j < bounds -i; j++)
+            {
+                if ( l.ContainsKey(new Vector3Int(i+j, j, 0)))
+                {
+                    if (l[new Vector3Int(i + j, j, 0)])
+                    {
+                        s += "0";
+                    }
+                    else { s += "X"; }
+                }
+                else { s += "-"; }
+                if (l.ContainsKey(new Vector3Int(j, j+i, 0)))
+                {
+                    if (l[new Vector3Int(j, j+i, 0)])
+                    {
+                        s2 += "0";
+                    }
+                    else { s2 += "X"; }
+                }
+                else { s2 += "-"; }
+            }
+            lines.Add(s);
+            lines.Add(s2);
+        }
+        //Diagonal(left leaning)
+        for (int i = 0; i<bounds; i++)
+        {
+            String s = "";
+            String s2 = "";
+            for (int j = 0; j<bounds+1; j++)
+            {
+                if (l.ContainsKey(new Vector3Int(i-j, j, 0)))
+                {
+                    if (l[new Vector3Int(i - j, j, 0)])
+                    {
+                        s += "0";
+                    }
+                    else { s += "X"; }
+                }
+                else { s += "-"; }
+                if (l.ContainsKey(new Vector3Int(bounds-1-j, bounds-1-i+j, 0)))//What the actual Fuck
+                {
+                    if (l[new Vector3Int(bounds - 1 - j, bounds - 1 - i + j, 0)])
+                    {
+                        s2 += "0";
+                    }
+                    else { s2 += "X"; }
+                }
+                else { s2 += "-"; }
+            }
+            lines.Add(s);
+            lines.Add(s2);
+        }
+
         return lines;
     }
 
