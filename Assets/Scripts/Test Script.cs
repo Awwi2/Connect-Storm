@@ -87,8 +87,12 @@ public class TestScript : MonoBehaviour
 
     void MakeIntelligentMove()
     {
-        Agent.Move(SymbolsDict);
+        Vector3Int m = Agent.Move(SymbolsDict);
+        SymbolsDict.Add(m, false);
+        Vector3 gridCoords = GetGridCoords(m);
+        Instantiate(Cross).transform.position = gridCoords;
         Turn = true;
+        checkWin(SymbolsDict);
     }
     void MakeRandomMove()
     {

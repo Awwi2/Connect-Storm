@@ -4,17 +4,22 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.UIElements;
 
+public class Node
+{
+    public Vector3 Move { get; private set; }
+    public int Value { get; private set; }
+}
 
-
+// TODO MoveSelection, EvaluationV2 fix
 public class Agent : MonoBehaviour
 {
     static System.Random rn;
     public GameObject Cross;
     public TestScript tscript;
     public int bounds;
-    public int minEval;
     private System.Diagnostics.Stopwatch timer;
     // Start is called before the first frame update
     void Start()
@@ -31,50 +36,59 @@ public class Agent : MonoBehaviour
     {
         
     }
-    public void Move(Dictionary<Vector3Int, bool> list)
+    public Vector3Int Move(Dictionary<Vector3Int, bool> list)
     {
         timer.Reset();
         timer.Start();
-        Debug.Log(MiniMax(list, bounds, 4, true));
+        KeyValuePair<Vector3Int, int> res = MiniMax(list, bounds, 2, true);
+        Debug.Log(res);
         Debug.Log("Time Taken: " + timer.Elapsed);
         timer.Stop();
-
+        return res.Key;
     }
-    int MiniMax(Dictionary<Vector3Int, bool> list, int bounds, int depth, bool maxPlayer)
+    KeyValuePair<Vector3Int, int> MiniMax(Dictionary<Vector3Int, bool> list, int bounds, int depth, bool maxPlayer)
     {
         if (depth == 0) {
-            //return EvaluateV2(list, !maxPlayer);
-            return EvaluateV1(list);
+            //Debug.Log("Hit the root node");
+            return new KeyValuePair<Vector3Int, int> (Vector3Int.up,EvaluateV2(list, !maxPlayer));
+            //return EvaluateV1(list);
         }
         List<Vector3Int> neighbours = GetNeighbours(list);
         //true means AI Agents Turn False means Players Turn
         if (maxPlayer) 
         {
-            minEval = -100000000;
+            Vector3Int minMove = Vector3Int.up;
+            int minEval = -100000000;
             foreach (Vector3Int v in neighbours) 
             {
                 list.Add(v, false);
                 //Debug.Log("Calling MiniMax with depth: " + (depth - 1) + "and list length. " + list.Count);
-                int eval = MiniMax(list, bounds, depth - 1, true);
+                int eval = MiniMax(list, bounds, depth - 1, false).Value;
                 list.Remove(v);
-                minEval = Math.Max(eval, minEval);
-                
+                if (eval > minEval)
+                {
+                    minEval = eval;
+                    minMove = v;
+                }
+                //minEval = Math.Max(eval, minEval);
             }
-            return minEval;
+            return new KeyValuePair<Vector3Int, int>(minMove, minEval); 
         }
         else
         {
-            minEval = 100000000;
+            int maxEval = 100000000;
             foreach (Vector3Int v in neighbours)
             {
                 list.Add(v, true);
-                int eval = MiniMax(list, bounds, depth - 1, false);
+                int eval = MiniMax(list, bounds, depth - 1, true).Value;
                 list.Remove(v);
-                minEval = Math.Min(eval, minEval);
+                maxEval = Math.Min(maxEval, eval);
+                //minEval = Math.Min(eval, minEval);
 
             }
+            return new KeyValuePair<Vector3Int, int>(Vector3Int.up, maxEval);
         }
-        return -1;
+        //return -1;
 
     }
 
@@ -88,6 +102,7 @@ public class Agent : MonoBehaviour
     {
         //turn = false is the AI Agent Move, turn = true is the players turn
         int value = 0;
+        
         List<String> SList = GetLines(l);
         foreach (String s in SList) 
         {
@@ -104,15 +119,15 @@ public class Agent : MonoBehaviour
             if (s.Contains("X0000-") && !turn) { value += -1000; }
             if (s.Contains("-000-") && turn) { value += -200; }
         }
-
         return value;
     }
     List<String> GetLines(Dictionary<Vector3Int, bool> l)
     {
-        List<String> lines = new List<String>();
+        List<String> lines = new ();
+        
         for (int i = 0; i < bounds; i++) {
             String s = "";
-            for (int j = 0; i < bounds; j++) {
+            for (int j = 0; j < bounds; j++) {
                 if (l.ContainsKey(new Vector3Int(i, j, 0))) {
                     if (l[new Vector3Int(i, j, 0)] == true)
                     {
@@ -129,7 +144,7 @@ public class Agent : MonoBehaviour
         for (int i = 0; i < bounds; i++)
         {
             String s = "";
-            for (int j = 0; i < bounds; j++)
+            for (int j = 0; j < bounds; j++)
             {
                 if (l.ContainsKey(new Vector3Int(j, i, 0)))
                 {
