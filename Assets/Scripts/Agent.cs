@@ -40,13 +40,13 @@ public class Agent : MonoBehaviour
     {
         timer.Reset();
         timer.Start();
-        KeyValuePair<Vector3Int, int> res = MiniMax(list, bounds, 2, true);
+        KeyValuePair<Vector3Int, int> res = MiniMax(list, bounds, 2, -1000000000, 1000000000, true);
         Debug.Log(res);
         Debug.Log("Time Taken: " + timer.Elapsed);
         timer.Stop();
         return res.Key;
     }
-    KeyValuePair<Vector3Int, int> MiniMax(Dictionary<Vector3Int, bool> list, int bounds, int depth, bool maxPlayer)
+    KeyValuePair<Vector3Int, int> MiniMax(Dictionary<Vector3Int, bool> list, int bounds, int depth, int alpha, int beta, bool maxPlayer)
     {
         if (depth == 0) {
             //Debug.Log("Hit the root node");
@@ -58,35 +58,40 @@ public class Agent : MonoBehaviour
         if (maxPlayer) 
         {
             Vector3Int minMove = Vector3Int.up;
-            int minEval = -100000000;
+            int maxEval = -100000000;
             foreach (Vector3Int v in neighbours) 
             {
                 list.Add(v, false);
                 //Debug.Log("Calling MiniMax with depth: " + (depth - 1) + "and list length. " + list.Count);
-                int eval = MiniMax(list, bounds, depth - 1, false).Value;
+                int eval = MiniMax(list, bounds, depth - 1, alpha, beta, false).Value;
                 list.Remove(v);
-                if (eval > minEval)
+                if (eval > maxEval)
                 {
-                    minEval = eval;
+                    maxEval = eval;
                     minMove = v;
                 }
+                //dont ask, it makes it better or smth
+                alpha = Math.Max(alpha, eval);
+                if (beta <= alpha){ break; } 
                 //minEval = Math.Max(eval, minEval);
             }
-            return new KeyValuePair<Vector3Int, int>(minMove, minEval); 
+            return new KeyValuePair<Vector3Int, int>(minMove, maxEval); 
         }
         else
         {
-            int maxEval = 100000000;
+            int minEval = 100000000;
             foreach (Vector3Int v in neighbours)
             {
                 list.Add(v, true);
-                int eval = MiniMax(list, bounds, depth - 1, true).Value;
+                int eval = MiniMax(list, bounds, depth - 1, alpha, beta, true).Value;
                 list.Remove(v);
-                maxEval = Math.Min(maxEval, eval);
+                minEval = Math.Min(minEval, eval);
+                beta = Math.Min(beta, eval);
+                if (beta <= alpha){ break; }
                 //minEval = Math.Min(eval, minEval);
 
             }
-            return new KeyValuePair<Vector3Int, int>(Vector3Int.up, maxEval);
+            return new KeyValuePair<Vector3Int, int>(Vector3Int.up, minEval);
         }
         //return -1;
 
